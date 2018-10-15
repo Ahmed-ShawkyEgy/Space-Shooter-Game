@@ -21,7 +21,10 @@ void anime();
 void init();
 void Key(unsigned char key, int x, int y);
 void Mouse(int x, int y);
-
+void animateBullets();
+void animateHazards();
+void moveEnemy();
+void EnemyFireTimer(int v);
 // Structs
 
 struct point
@@ -67,13 +70,25 @@ struct shape
 	vector<shape> bullets;
 
 
-// Enemy variables
+// Enemy Variables
 	shape enemy;
 	float enemySpeed;
 	float t,enemyDirection;
 	point p0, p1, p2, p3;
 	bool enemyIsAlive;
 	float enemyHealth;
+
+// Obstacles Variables
+	vector<shape> obstacles;
+
+// Hazards Variables
+	vector<shape> hazards;
+	float hazardSpeed;
+	float hazarWidth, hazardHeight;
+
+// PowerUps Variables
+	vector<shape> powerUps;
+
 //-----------------
 
 
@@ -108,6 +123,7 @@ void drawPlayer(shape s)
 	drawTriangle(point(x - width/5, y) , point(x, y + height), point(x + width/5, y)); // Head
 }
 
+// TODO Implement
 void drawEnemy(shape s)
 {
 	float x = s.center.x, y = s.center.y, width = s.width, height = s.height;
@@ -122,6 +138,20 @@ void drawBullet(shape s)
 	drawRect(point(xLeft, yLower + height), point(xRight, yLower)); // Body
 	drawTriangle(point(xLeft, yLower + height), point(xCenter, yLower + height + height / 2), point(xRight , yLower+height)); // Head
 }
+
+// TODO Implement
+void drawObstacle(shape s) 
+{
+	drawEnemy(s);
+}
+
+// TODO Implement
+void drawHazard(shape s)
+{
+	drawBullet(s);
+}
+
+  // Helper Functions
 
 point bezier(float t, point p0, point p1, point p2, point p3)
 {
@@ -153,6 +183,8 @@ bool collide(shape a, shape b)
 		a.center.y < b.center.y + b.height &&
 		a.height + a.center.y > b.center.y;
 }
+
+
 //----------------- 
 
 // Dynamic Actions
@@ -162,13 +194,19 @@ void fireBullet(point location)
 	bullets.push_back(shape(location , bulletWidth , bulletHeight));
 }
 
-void destroyBullet(int index)
+void fireHazard(point location)
 {
-	// Swap this bullet with the last one to pop from the vector
-	shape tmp = bullets[bullets.size()-1];
-	bullets[bullets.size()-1] = bullets[index];
-	bullets[index] = tmp;
-	bullets.pop_back();
+	hazards.push_back(shape(location, hazarWidth, hazardHeight));
+	cout << "Pushed Hazard " << hazards.size() << "\n";
+}
+
+void destroyAtIndex(int index,vector<shape> &shapes)
+{
+	// Swap this element with the last one to pop from the vector
+	shape tmp = shapes[shapes.size()-1];
+	shapes[shapes.size()-1] = shapes[index];
+	shapes[index] = tmp;
+	shapes.pop_back();
 }
 
 
@@ -184,6 +222,7 @@ void main(int argc, char** argr)
 	glutDisplayFunc(Display);
 	glutIdleFunc(anime);
 	glutKeyboardFunc(Key);      // sets the Keyboard handler function; called when a key is pressed
+	glutTimerFunc(0, EnemyFireTimer, 0); // sets the Timer handler function; which runs every `Threshold` milliseconds (1st argument)
 	glutPassiveMotionFunc(Mouse);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);	
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -194,22 +233,29 @@ void main(int argc, char** argr)
 
 void init()
 {
+	// Player Variables
 	player = shape(point(200.0f, 20.0f), 50.0f, 30.0f);
 	playerSpeed = 20.0f ;
 	playerFireRate = 50;
 	playerIsAlive = true;
 
+	// Bullet Variables
 	bulletWidth = 10.0f, bulletHeight = 10.0f , bulletSpeed = 8.0f;
 
+	// Enemy Variables
 	enemySpeed = 0.005;
 	enemyDirection = 1;
 	enemy = shape(point(), 50, 50);
 	enemyIsAlive = true;
 
+	// Enemy Path variables
 	t = 1;
-	
 	p0 = point(enemy.width, SCREEN_HEIGHT/1.3);
 	p3 = point(SCREEN_WIDTH - enemy.height,SCREEN_HEIGHT/1.3);
+
+	// Hazards Variables
+	hazardSpeed = 1.0f;
+	hazarWidth = 10.0f, hazardHeight = 10.0f;
 }
 
 void Display(void)
@@ -217,10 +263,24 @@ void Display(void)
 	//glClearColor(0.0f, 0.0f,0.0f, 0.0f); // update the background color
 	glClear(GL_COLOR_BUFFER_BIT);
 
+	// Render bullets
 	for (unsigned i = 0; i < bullets.size(); i++)
 	{
 		shape bullet = bullets[i];
 		drawBullet(shape(bullet.center, bullet.width, bullet.height));
+	}
+
+	// Render Hazards
+	for (unsigned i = 0; i < hazards.size(); i++)
+	{
+		shape hazard = hazards[i];
+		glPushMatrix();
+		glTranslatef(hazard.center.x, hazard.center.y, 0);
+		glRotated(180,1,0, 0);
+		glTranslatef(-hazard.center.x , -hazard.center.y,0);
+		drawHazard(shape(hazard.center, hazard.width, hazard.height));
+		cout << hazard.center.x << "\n";
+		glPopMatrix();
 	}
 
 	if(playerIsAlive)
@@ -228,54 +288,19 @@ void Display(void)
 	if(enemyIsAlive)
 		drawEnemy(enemy);
 
+
+
 	glFlush();
 }
 
 void anime()
 {
+	animateHazards();
+	animateBullets();
 
-	// Manage bullets in the scene
-	for (unsigned i = 0; i < bullets.size(); i++)
-	{
-		shape &bullet = bullets[i];
-		if (bullet.outOfBorders())
-			destroyBullet(i--);
-		else
-		{
-			if (enemyIsAlive && collide(bullet, enemy))
-			{
-				destroyBullet(i--);
-				enemyIsAlive = false;
-			}
-			else
-			{
-				bullet.center.y+= bulletSpeed;
-			}
-		}
-	}
-
-	// Move Enemy
 	if (enemyIsAlive)
-	{
-		if (t <= 0 || t >= 1)
-		{
-			if (t <= 0)
-				enemyDirection = RIGHT_DIRECTION;
-			else if (t >= 1)
-				enemyDirection = LEFT_DIRECTION;
-
-			p1 = point(random(0,SCREEN_WIDTH),random(SCREEN_HEIGHT/2,SCREEN_HEIGHT - enemy.height));
-			p2 = point(random(0, SCREEN_WIDTH), random(SCREEN_HEIGHT / 2, SCREEN_HEIGHT - enemy.height));
-
-		}
-
-		point newEnemyPos = bezier(t, p0, p1, p2, p3);
-		if (newEnemyPos.y + enemy.height > SCREEN_HEIGHT) // Clamp position to frame borders
-			newEnemyPos.y =enemy.center.y;
-
-		enemy.center = newEnemyPos;
-		t += enemyDirection * enemySpeed;
-	}
+		moveEnemy();
+	
 	
 
 	for (int i = 0; i < 1e7; i++);
@@ -311,3 +336,82 @@ void Mouse(int x, int y)
 	glutPostRedisplay();
 }
 
+
+
+
+
+
+void EnemyFireTimer(int v)
+{
+	if (!enemyIsAlive)
+		return;
+	int chance = random(0, 100);
+	if (chance<100) // 50% enemy will shoot now
+		fireHazard(enemy.center);
+	
+	glutTimerFunc(1 * 1000, EnemyFireTimer, 0);
+}
+
+
+void animateHazards()
+{
+	for (unsigned i = 0; i < hazards.size(); i++)
+	{
+		shape &hazard = hazards[i];
+		if (hazard.outOfBorders())
+			destroyAtIndex(i--, hazards);
+		else
+		{
+			/*if (enemyIsAlive && collide(hazard, enemy))
+			{
+				destroyAtIndex(i--, hazards);
+				enemyIsAlive = false;
+			}
+			else*/
+				hazard.center.y -= hazardSpeed;
+		}
+	}
+}
+
+void animateBullets()
+{
+	for (unsigned i = 0; i < bullets.size(); i++)
+	{
+		shape &bullet = bullets[i];
+		if (bullet.outOfBorders())
+			destroyAtIndex(i--, bullets);
+		else
+		{
+			if (enemyIsAlive && collide(bullet, enemy))
+			{
+				destroyAtIndex(i--, bullets);
+				enemyIsAlive = false;
+			}
+			else
+				bullet.center.y += bulletSpeed;
+		}
+	}
+}
+
+
+void moveEnemy()
+{
+	if (t <= 0 || t >= 1)
+	{
+		if (t <= 0)
+			enemyDirection = RIGHT_DIRECTION;
+		else if (t >= 1)
+			enemyDirection = LEFT_DIRECTION;
+
+		p1 = point(random(0, SCREEN_WIDTH), random(SCREEN_HEIGHT / 2, SCREEN_HEIGHT - enemy.height));
+		p2 = point(random(0, SCREEN_WIDTH), random(SCREEN_HEIGHT / 2, SCREEN_HEIGHT - enemy.height));
+
+	}
+
+	point newEnemyPos = bezier(t, p0, p1, p2, p3);
+	if (newEnemyPos.y + enemy.height > SCREEN_HEIGHT) // Clamp position to frame borders
+		newEnemyPos.y = enemy.center.y;
+
+	enemy.center = newEnemyPos;
+	t += enemyDirection * enemySpeed;
+}
