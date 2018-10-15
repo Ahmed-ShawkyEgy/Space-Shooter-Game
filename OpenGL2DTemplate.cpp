@@ -59,6 +59,7 @@ void Key(unsigned char key, int x, int y);
 	shape player;
 	float playerSpeed ;
 	int playerFireRate;
+	bool playerIsAlive;
 
 // Bullet Vairables
 	float bulletWidth, bulletHeight , bulletSpeed;
@@ -68,9 +69,9 @@ void Key(unsigned char key, int x, int y);
 // Enemy variables
 	shape enemy;
 	float enemySpeed;
-	float t ,enemyDirection;
+	float t,enemyDirection;
 	point p0, p1, p2, p3;
-
+	bool enemyIsAlive;
 //-----------------
 
 
@@ -132,6 +133,24 @@ int random(int lower, int upper)
 {
 	return (rand() % (upper-lower+1)) + lower;
 }
+
+bool collide(shape a, shape b)
+{
+	/*float ax1 = a.center.x - a.width / 2;
+	float ax2 = a.center.x + a.width / 2;
+	float ay1 = a.center.y + a.height / 2;
+	float ay2 = a.center.y - a.height / 2;
+
+	float bx1 = b.center.x - b.width / 2;
+	float bx2 = b.center.x + b.width / 2;
+	float by1 = b.center.y + b.height / 2;
+	float by2 = b.center.y - b.height / 2;
+*/
+	return a.center.x < b.center.x + b.width &&
+		a.center.x + a.width > b.center.x &&
+		a.center.y < b.center.y + b.height &&
+		a.height + a.center.y > b.center.y;
+}
 //----------------- 
 
 // Dynamic Actions
@@ -188,12 +207,14 @@ void init()
 	player = shape(point(200.0f, 20.0f), 50.0f, 30.0f);
 	playerSpeed = 20.0f ;
 	playerFireRate = 50;
+	playerIsAlive = true;
 
-	bulletWidth = 10.0f, bulletHeight = 10.0f , bulletSpeed = 6.0f;
+	bulletWidth = 10.0f, bulletHeight = 10.0f , bulletSpeed = 8.0f;
 
 	enemySpeed = 0.005;
 	enemyDirection = 1;
 	enemy = shape(point(), 50, 50);
+	enemyIsAlive = true;
 
 	t = 1;
 	
@@ -212,9 +233,10 @@ void Display(void)
 		drawBullet(shape(bullet.center, bullet.width, bullet.height));
 	}
 
-	drawPlayer(player); 
-
-	drawEnemy(enemy);
+	if(playerIsAlive)
+		drawPlayer(player); 
+	if(enemyIsAlive)
+		drawEnemy(enemy);
 
 	glFlush();
 }
@@ -229,30 +251,41 @@ void anime()
 		if (bullet.outOfBorders())
 			destroyBullet(i--);
 		else
-			bullet.center.y+= bulletSpeed;
+		{
+			if (enemyIsAlive && collide(bullet, enemy))
+			{
+				destroyBullet(i--);
+				enemyIsAlive = false;
+			}
+			else
+			{
+				bullet.center.y+= bulletSpeed;
+			}
+		}
 	}
 
 	// Move Enemy
-
-
-	if (t <= 0 || t >= 1)
+	if (enemyIsAlive)
 	{
-		if (t <= 0)
-			enemyDirection = RIGHT_DIRECTION;
-		else if (t >= 1)
-			enemyDirection = LEFT_DIRECTION;
+		if (t <= 0 || t >= 1)
+		{
+			if (t <= 0)
+				enemyDirection = RIGHT_DIRECTION;
+			else if (t >= 1)
+				enemyDirection = LEFT_DIRECTION;
 
-		p1 = point(random(0,SCREEN_WIDTH),random(SCREEN_HEIGHT/2,SCREEN_HEIGHT - enemy.height));
-		p2 = point(random(0, SCREEN_WIDTH), random(SCREEN_HEIGHT / 2, SCREEN_HEIGHT - enemy.height));
+			p1 = point(random(0,SCREEN_WIDTH),random(SCREEN_HEIGHT/2,SCREEN_HEIGHT - enemy.height));
+			p2 = point(random(0, SCREEN_WIDTH), random(SCREEN_HEIGHT / 2, SCREEN_HEIGHT - enemy.height));
 
+		}
+
+		point newEnemyPos = bezier(t, p0, p1, p2, p3);
+		if (newEnemyPos.y + enemy.height > SCREEN_HEIGHT) // Clamp position to frame borders
+			newEnemyPos.y =enemy.center.y;
+
+		enemy.center = newEnemyPos;
+		t += enemyDirection * enemySpeed;
 	}
-
-	point newEnemyPos = bezier(t, p0, p1, p2, p3);
-	if (newEnemyPos.y + enemy.height > SCREEN_HEIGHT) // Clamp position to frame borders
-		newEnemyPos.y =enemy.center.y;
-
-	enemy.center = newEnemyPos;
-	t += enemyDirection * enemySpeed;
 	
 
 	for (int i = 0; i < 1e7; i++);
@@ -265,7 +298,7 @@ void Key(unsigned char key, int x, int y)
 	switch (key)
 	{
 	case 'a': // Move left
-		if (player.center.x - player.width / 2 - playerSpeed >= 0)
+		if (playerIsAlive && player.center.x - player.width / 2 - playerSpeed >= 0)
 		{
 			
 			player.center.x -= playerSpeed;
@@ -273,14 +306,14 @@ void Key(unsigned char key, int x, int y)
 		break;
 
 	case 'd': // Move right
-		if (player.center.x + player.width / 2 + playerSpeed <= SCREEN_WIDTH)
+		if (playerIsAlive && player.center.x + player.width / 2 + playerSpeed <= SCREEN_WIDTH)
 		{
 			player.center.x += playerSpeed;
 		}
 		break;
 
 	case ' ': // Fire
-		if (bullets.size() < playerFireRate)
+		if (playerIsAlive && bullets.size() < playerFireRate)
 		{
 			fireBullet(player.center);
 		}
