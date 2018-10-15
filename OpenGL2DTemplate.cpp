@@ -15,6 +15,12 @@ const int SCREEN_HEIGHT = 900;
 const int RIGHT_DIRECTION = 1, LEFT_DIRECTION = -1;
 
 //-----------------
+//	Methods Signatures
+void Display();
+void anime();
+void init();
+void Key(unsigned char key, int x, int y);
+void Mouse(int x, int y);
 
 // Structs
 
@@ -45,11 +51,6 @@ struct shape
 };
 
 
-//	Methods Signatures
-void Display();
-void anime();
-void init();
-void Key(unsigned char key, int x, int y);
 
 //-----------------
 
@@ -57,7 +58,7 @@ void Key(unsigned char key, int x, int y);
 
 // Player Variables
 	shape player;
-	float playerSpeed ;
+	float playerSpeed ; // TODO Remove
 	int playerFireRate;
 	bool playerIsAlive;
 
@@ -72,6 +73,7 @@ void Key(unsigned char key, int x, int y);
 	float t,enemyDirection;
 	point p0, p1, p2, p3;
 	bool enemyIsAlive;
+	float enemyHealth;
 //-----------------
 
 
@@ -174,19 +176,6 @@ void destroyBullet(int index)
 
 void main(int argc, char** argr)
 {
-	/*
-	std::vector<int> arr;
-	arr.push_back(0);
-	arr.push_back(1);
-	arr.push_back(2);
-
-	cout << arr[0] << "\n";
-	arr.pop_back();
-	
-	for (auto x : arr)
-		std::cout << x << " ";
-	*/
-
 	init();
 	glutInit(&argc, argr);
 	glutInitWindowSize(SCREEN_WIDTH,SCREEN_HEIGHT);
@@ -195,6 +184,7 @@ void main(int argc, char** argr)
 	glutDisplayFunc(Display);
 	glutIdleFunc(anime);
 	glutKeyboardFunc(Key);      // sets the Keyboard handler function; called when a key is pressed
+	glutPassiveMotionFunc(Mouse);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);	
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	gluOrtho2D(0.0, SCREEN_WIDTH, 0.0, SCREEN_HEIGHT);
@@ -297,21 +287,6 @@ void Key(unsigned char key, int x, int y)
 	
 	switch (key)
 	{
-	case 'a': // Move left
-		if (playerIsAlive && player.center.x - player.width / 2 - playerSpeed >= 0)
-		{
-			
-			player.center.x -= playerSpeed;
-		}
-		break;
-
-	case 'd': // Move right
-		if (playerIsAlive && player.center.x + player.width / 2 + playerSpeed <= SCREEN_WIDTH)
-		{
-			player.center.x += playerSpeed;
-		}
-		break;
-
 	case ' ': // Fire
 		if (playerIsAlive && bullets.size() < playerFireRate)
 		{
@@ -328,4 +303,11 @@ void Key(unsigned char key, int x, int y)
 }
 
 
+void Mouse(int x, int y) 
+{
+	if(playerIsAlive)
+	player.center.x = x;
+
+	glutPostRedisplay();
+}
 
