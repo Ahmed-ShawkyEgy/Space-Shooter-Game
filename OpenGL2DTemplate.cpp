@@ -56,8 +56,8 @@ void Key(unsigned char key, int x, int y);
 //	Global Variables
 
 // Player Variables
-	point playerPos;
-	float playerSpeed , playerWidth , playerHeight;
+	shape player;
+	float playerSpeed ;
 	int playerFireRate;
 
 // Bullet Vairables
@@ -66,8 +66,8 @@ void Key(unsigned char key, int x, int y);
 
 
 // Enemy variables
-	point enemyPos;
-	float enemySpeed, enemyWidth, enemyHeight;
+	shape enemy;
+	float enemySpeed;
 	float t ,enemyDirection;
 	point p0, p1, p2, p3;
 
@@ -185,20 +185,20 @@ void main(int argc, char** argr)
 
 void init()
 {
-	playerPos = point(200.0f, 20.0f);
-	playerSpeed = 10.0f , playerWidth = 50.0f , playerHeight = 30.0f;
+	player = shape(point(200.0f, 20.0f), 50.0f, 30.0f);
+	playerSpeed = 20.0f ;
 	playerFireRate = 50;
 
-	bulletWidth = 10.0f, bulletHeight = 10.0f , bulletSpeed = 4.0f;
+	bulletWidth = 10.0f, bulletHeight = 10.0f , bulletSpeed = 6.0f;
 
 	enemySpeed = 0.005;
 	enemyDirection = 1;
-	enemyWidth = 50, enemyHeight = 50;
+	enemy = shape(point(), 50, 50);
 
 	t = 1;
 	
-	p0 = point(enemyWidth, SCREEN_HEIGHT/1.3);
-	p3 = point(SCREEN_WIDTH - enemyHeight,SCREEN_HEIGHT/1.3);
+	p0 = point(enemy.width, SCREEN_HEIGHT/1.3);
+	p3 = point(SCREEN_WIDTH - enemy.height,SCREEN_HEIGHT/1.3);
 }
 
 void Display(void)
@@ -212,9 +212,9 @@ void Display(void)
 		drawBullet(shape(bullet.center, bullet.width, bullet.height));
 	}
 
-	drawPlayer(shape(playerPos, playerWidth, playerHeight)); 
+	drawPlayer(player); 
 
-	drawEnemy(shape(enemyPos, enemyWidth,enemyHeight));
+	drawEnemy(enemy);
 
 	glFlush();
 }
@@ -242,16 +242,16 @@ void anime()
 		else if (t >= 1)
 			enemyDirection = LEFT_DIRECTION;
 
-		p1 = point(random(0,SCREEN_WIDTH),random(SCREEN_HEIGHT/2,SCREEN_HEIGHT - enemyHeight));
-		p2 = point(random(0, SCREEN_WIDTH), random(SCREEN_HEIGHT / 2, SCREEN_HEIGHT - enemyHeight));
+		p1 = point(random(0,SCREEN_WIDTH),random(SCREEN_HEIGHT/2,SCREEN_HEIGHT - enemy.height));
+		p2 = point(random(0, SCREEN_WIDTH), random(SCREEN_HEIGHT / 2, SCREEN_HEIGHT - enemy.height));
 
 	}
 
 	point newEnemyPos = bezier(t, p0, p1, p2, p3);
-	if (newEnemyPos.y + enemyHeight > SCREEN_HEIGHT) // Clamp position to frame borders
-		newEnemyPos.y = enemyPos.y;
+	if (newEnemyPos.y + enemy.height > SCREEN_HEIGHT) // Clamp position to frame borders
+		newEnemyPos.y =enemy.center.y;
 
-	enemyPos = newEnemyPos;
+	enemy.center = newEnemyPos;
 	t += enemyDirection * enemySpeed;
 	
 
@@ -265,24 +265,24 @@ void Key(unsigned char key, int x, int y)
 	switch (key)
 	{
 	case 'a': // Move left
-		if (playerPos.x - playerWidth / 2 - playerSpeed >= 0)
+		if (player.center.x - player.width / 2 - playerSpeed >= 0)
 		{
 			
-			playerPos.x -= playerSpeed;
+			player.center.x -= playerSpeed;
 		}
 		break;
 
 	case 'd': // Move right
-		if (playerPos.x + playerWidth / 2 + playerSpeed <= SCREEN_WIDTH)
+		if (player.center.x + player.width / 2 + playerSpeed <= SCREEN_WIDTH)
 		{
-			playerPos.x += playerSpeed;
+			player.center.x += playerSpeed;
 		}
 		break;
 
 	case ' ': // Fire
 		if (bullets.size() < playerFireRate)
 		{
-			fireBullet(playerPos);
+			fireBullet(player.center);
 		}
 		break;
 
