@@ -59,6 +59,9 @@ struct shape
 
 //	Global Variables
 
+// Status Bar
+	point statusBarPos;
+
 // Player Variables
 	shape player;
 	float playerSpeed ; // TODO Remove
@@ -76,7 +79,7 @@ struct shape
 	float t,enemyDirection;
 	point p0, p1, p2, p3;
 	bool enemyIsAlive;
-	float enemyHealth;
+	int enemyHealth;
 
 // Obstacles Variables
 	vector<shape> obstacles;
@@ -184,7 +187,23 @@ bool collide(shape a, shape b)
 		a.height + a.center.y > b.center.y;
 }
 
+void print(point p, char *string)
+{
+	float x = p.x, y = p.y;
+	int len, i;
 
+	//set the position of the text in the window using the x and y coordinates
+	glRasterPos2f(x, y);
+
+	//get the length of the string to display
+	len = (int)strlen(string);
+
+	//loop to display character by character
+	for (i = 0; i < len; i++)
+	{
+		glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
+	}
+}
 //----------------- 
 
 // Dynamic Actions
@@ -197,7 +216,6 @@ void fireBullet(point location)
 void fireHazard(point location)
 {
 	hazards.push_back(shape(location, hazarWidth, hazardHeight));
-	cout << "Pushed Hazard " << hazards.size() << "\n";
 }
 
 void destroyAtIndex(int index,vector<shape> &shapes)
@@ -233,6 +251,9 @@ void main(int argc, char** argr)
 
 void init()
 {
+	// Status Bar
+	statusBarPos = point(10, SCREEN_HEIGHT - 30);
+
 	// Player Variables
 	player = shape(point(200.0f, 20.0f), 50.0f, 30.0f);
 	playerSpeed = 20.0f ;
@@ -240,13 +261,14 @@ void init()
 	playerIsAlive = true;
 
 	// Bullet Variables
-	bulletWidth = 10.0f, bulletHeight = 10.0f , bulletSpeed = 8.0f;
+	bulletWidth = 10.0f, bulletHeight = 10.0f , bulletSpeed = 18.0f;
 
 	// Enemy Variables
 	enemySpeed = 0.005;
 	enemyDirection = 1;
 	enemy = shape(point(), 50, 50);
 	enemyIsAlive = true;
+	enemyHealth = 20;
 
 	// Enemy Path variables
 	t = 1;
@@ -254,7 +276,7 @@ void init()
 	p3 = point(SCREEN_WIDTH - enemy.height,SCREEN_HEIGHT/1.3);
 
 	// Hazards Variables
-	hazardSpeed = 1.0f;
+	hazardSpeed = 10.0f;
 	hazarWidth = 10.0f, hazardHeight = 10.0f;
 }
 
@@ -279,7 +301,6 @@ void Display(void)
 		glRotated(180,1,0, 0);
 		glTranslatef(-hazard.center.x , -hazard.center.y,0);
 		drawHazard(shape(hazard.center, hazard.width, hazard.height));
-		cout << hazard.center.x << "\n";
 		glPopMatrix();
 	}
 
@@ -288,7 +309,9 @@ void Display(void)
 	if(enemyIsAlive)
 		drawEnemy(enemy);
 
-
+	char* health[20];
+	sprintf((char *)health, "Health = %d", enemyHealth);
+	print(statusBarPos, (char *)health);
 
 	glFlush();
 }
@@ -362,12 +385,12 @@ void animateHazards()
 			destroyAtIndex(i--, hazards);
 		else
 		{
-			/*if (enemyIsAlive && collide(hazard, enemy))
+			if (playerIsAlive && collide(hazard, player))
 			{
 				destroyAtIndex(i--, hazards);
-				enemyIsAlive = false;
+				playerIsAlive = false;
 			}
-			else*/
+			else
 				hazard.center.y -= hazardSpeed;
 		}
 	}
@@ -384,8 +407,10 @@ void animateBullets()
 		{
 			if (enemyIsAlive && collide(bullet, enemy))
 			{
+				enemyHealth--;
 				destroyAtIndex(i--, bullets);
-				enemyIsAlive = false;
+				if(enemyHealth<=0)
+					enemyIsAlive = false;
 			}
 			else
 				bullet.center.y += bulletSpeed;
