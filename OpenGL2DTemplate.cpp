@@ -65,6 +65,8 @@ struct shape
 
 // Status Bar
 	point statusBarPos;
+	point healthBarPos;
+	int healthBarWidth;
 
 // Player Variables
 	shape player;
@@ -84,7 +86,7 @@ struct shape
 	float t,enemyDirection;
 	point p0, p1, p2, p3;
 	bool enemyIsAlive;
-	int enemyHealth;
+	int enemyHealth , enemyFullHealth;
 	int enemyFireRate; // Bullets per second
 
 // Obstacles Variables
@@ -267,7 +269,10 @@ void init()
 {
 	// Status Bar
 	statusBarPos = point(10, SCREEN_HEIGHT - 30);
+	healthBarPos = point(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 30);
+	healthBarWidth = 400;
 	myScore = 0;
+
 
 	// Player Variables
 	player = shape(point(200.0f, 20.0f), 50.0f, 30.0f);
@@ -279,17 +284,17 @@ void init()
 	bulletWidth = 10.0f, bulletHeight = 10.0f , bulletSpeed = 18.0f;
 
 	// Enemy Variables
-	enemySpeed = 0.005;
+	enemySpeed = 0.004;
 	enemyDirection = 1;
 	enemy = shape(point(), 50, 50);
 	enemyIsAlive = true;
-	enemyHealth = 10;
+	enemyHealth = enemyFullHealth = 10;
+	enemyFireRate = 2;
 
 	// Enemy Path variables
 	t = 1;
 	p0 = point(enemy.width, SCREEN_HEIGHT/1.2);
 	p3 = point(SCREEN_WIDTH - enemy.height,SCREEN_HEIGHT/1.2);
-	enemyFireRate = 2;
 
 	// Hazards Variables
 	hazardSpeed = 10.0f;
@@ -308,7 +313,6 @@ void Display(void)
 {
 	//glClearColor(0.0f, 0.0f,0.0f, 0.0f); // update the background color
 	glClear(GL_COLOR_BUFFER_BIT);
-
 	// Render bullets
 	for (unsigned i = 0; i < bullets.size(); i++)
 	{
@@ -334,10 +338,22 @@ void Display(void)
 		drawEnemy(enemy);
 	if (obstacleIsAlive)
 		drawObstacle(obstacle);
-	
+
+
 	char* score[20];
 	sprintf((char *)score, "Score = %d", myScore);
 	print(statusBarPos, (char *)score);
+
+
+	
+	glColor3f(0.4, 0, 0);
+	int xHealthRightPos = healthBarPos.x + healthBarWidth / 2;
+	int xHealthLeftPos = healthBarPos.x - healthBarWidth / 2;
+
+	drawRect(point(xHealthLeftPos, SCREEN_HEIGHT), point(xHealthRightPos,SCREEN_HEIGHT-20));
+	glColor3f(1, 0, 0);
+	drawRect(point(xHealthLeftPos, SCREEN_HEIGHT), point(xHealthLeftPos +  (enemyHealth * (xHealthRightPos-xHealthLeftPos) / enemyFullHealth), SCREEN_HEIGHT - 20));
+	glColor3f(1, 1, 1);
 
 	glFlush();
 }
