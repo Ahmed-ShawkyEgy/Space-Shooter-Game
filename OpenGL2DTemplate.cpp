@@ -24,7 +24,11 @@ void Mouse(int x, int y);
 void animateBullets();
 void animateHazards();
 void moveEnemy();
-void EnemyFireTimer(int v);
+void enemyFireTimer(int v);
+void obstacleFireTimer(int v);
+void obstacleTimer(int v);
+void moveObstacle();
+
 // Structs
 
 struct point
@@ -80,9 +84,14 @@ struct shape
 	point p0, p1, p2, p3;
 	bool enemyIsAlive;
 	int enemyHealth;
+	int enemyFireRate; // Bullets per second
 
 // Obstacles Variables
-	vector<shape> obstacles;
+	bool obstacleIsAlive;
+	shape obstacle;
+	float obstacleSpeed , obstacleWidth , obstacleHeight;
+	int obstacleDirection;
+	int obstacleFireRate;
 
 // Hazards Variables
 	vector<shape> hazards;
@@ -239,8 +248,12 @@ void main(int argc, char** argr)
 	glutCreateWindow("Space Shooter");
 	glutDisplayFunc(Display);
 	glutIdleFunc(anime);
-	glutKeyboardFunc(Key);      // sets the Keyboard handler function; called when a key is pressed
-	glutTimerFunc(0, EnemyFireTimer, 0); // sets the Timer handler function; which runs every `Threshold` milliseconds (1st argument)
+	glutKeyboardFunc(Key);      
+
+	glutTimerFunc(0, enemyFireTimer, 0); 
+	glutTimerFunc(0, obstacleTimer, 0); 
+	glutTimerFunc(0, obstacleFireTimer, 0); 
+
 	glutPassiveMotionFunc(Mouse);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);	
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -268,16 +281,25 @@ void init()
 	enemyDirection = 1;
 	enemy = shape(point(), 50, 50);
 	enemyIsAlive = true;
-	enemyHealth = 100;
+	enemyHealth = 10;
 
 	// Enemy Path variables
 	t = 1;
-	p0 = point(enemy.width, SCREEN_HEIGHT/1.3);
-	p3 = point(SCREEN_WIDTH - enemy.height,SCREEN_HEIGHT/1.3);
+	p0 = point(enemy.width, SCREEN_HEIGHT/1.2);
+	p3 = point(SCREEN_WIDTH - enemy.height,SCREEN_HEIGHT/1.2);
+	enemyFireRate = 2;
 
 	// Hazards Variables
 	hazardSpeed = 10.0f;
 	hazarWidth = 10.0f, hazardHeight = 10.0f;
+
+	// Obstacle Variables
+	obstacleHeight = 50;
+	obstacleWidth = 50;
+	obstacleSpeed = 10;
+	obstacleDirection = RIGHT_DIRECTION;
+	obstacleIsAlive = false;
+	obstacleFireRate = 1;
 }
 
 void Display(void)
@@ -308,6 +330,10 @@ void Display(void)
 		drawPlayer(player); 
 	if(enemyIsAlive)
 		drawEnemy(enemy);
+	if (obstacleIsAlive)
+	{
+		drawObstacle(obstacle);
+	}
 
 	char* health[20];
 	sprintf((char *)health, "Health = %d", enemyHealth);
@@ -324,6 +350,8 @@ void anime()
 	if (enemyIsAlive)
 		moveEnemy();
 	
+	if (obstacleIsAlive)
+		moveObstacle();
 	
 
 	for (int i = 0; i < 1e7; i++);
@@ -362,9 +390,32 @@ void Mouse(int x, int y)
 
 
 
+void obstacleTimer(int v)
+{
+	if (!obstacleIsAlive)
+	{
+		obstacle = shape(point(obstacleWidth+1, SCREEN_HEIGHT/1.5), obstacleWidth, obstacleHeight);
+		obstacleDirection = RIGHT_DIRECTION;
+	}
+	obstacleIsAlive = true;
+	glutTimerFunc(2 * 1000, obstacleTimer, 0);
+}
 
+void obstacleFireTimer(int v)
+{
+	if (!obstacleIsAlive)
+		return;
+		cout << " obstacle fire at " << obstacle.center.x << "\n";
+	int chance = random(1, 100);
+	if (chance < 80) // 80% enemy will shoot now
+	{
+		fireHazard(obstacle.center);
+	}
 
-void EnemyFireTimer(int v)
+	glutTimerFunc(1000/obstacleFireRate, obstacleFireTimer, 0);
+}
+
+void enemyFireTimer(int v)
 {
 	if (!enemyIsAlive)
 		return;
@@ -372,7 +423,7 @@ void EnemyFireTimer(int v)
 	if (chance<80) // 80% enemy will shoot now
 		fireHazard(enemy.center);
 	
-	glutTimerFunc(1 * 1000, EnemyFireTimer, 0);
+	glutTimerFunc(1000/enemyFireRate, enemyFireTimer, 0);
 }
 
 
@@ -439,4 +490,15 @@ void moveEnemy()
 
 	enemy.center = newEnemyPos;
 	t += enemyDirection * enemySpeed;
+}
+
+
+void moveObstacle()
+{
+	obstacle.center.x += obstacleSpeed * obstacleDirection;
+	if (obstacle.outOfBorders())
+	{
+		obstacleDirection *= -1;
+		obstacle.center.x += obstacleSpeed * obstacleDirection;
+	}
 }
