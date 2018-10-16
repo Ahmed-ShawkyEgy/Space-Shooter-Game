@@ -403,15 +403,12 @@ void obstacleTimer(int v)
 
 void obstacleFireTimer(int v)
 {
-	if (!obstacleIsAlive)
-		return;
-		cout << " obstacle fire at " << obstacle.center.x << "\n";
-	int chance = random(1, 100);
-	if (chance < 80) // 80% enemy will shoot now
+	if (obstacleIsAlive)
 	{
-		fireHazard(obstacle.center);
+		int chance = random(1, 100);
+		if (chance < 80) // 80% enemy will shoot now
+			fireHazard(obstacle.center);
 	}
-
 	glutTimerFunc(1000/obstacleFireRate, obstacleFireTimer, 0);
 }
 
@@ -462,6 +459,11 @@ void animateBullets()
 				destroyAtIndex(i--, bullets);
 				if(enemyHealth<=0)
 					enemyIsAlive = false;
+			}
+			else if (obstacleIsAlive && collide(bullet, obstacle))
+			{
+				destroyAtIndex(i--, bullets);
+				obstacleIsAlive = false;
 			}
 			else
 				bullet.center.y += bulletSpeed;
