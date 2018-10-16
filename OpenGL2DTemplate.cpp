@@ -71,6 +71,7 @@ struct shape
 	float playerSpeed ; // TODO Remove
 	int playerFireRate;
 	bool playerIsAlive;
+	int myScore;
 
 // Bullet Vairables
 	float bulletWidth, bulletHeight , bulletSpeed;
@@ -266,6 +267,7 @@ void init()
 {
 	// Status Bar
 	statusBarPos = point(10, SCREEN_HEIGHT - 30);
+	myScore = 0;
 
 	// Player Variables
 	player = shape(point(200.0f, 20.0f), 50.0f, 30.0f);
@@ -331,13 +333,11 @@ void Display(void)
 	if(enemyIsAlive)
 		drawEnemy(enemy);
 	if (obstacleIsAlive)
-	{
 		drawObstacle(obstacle);
-	}
-
-	char* health[20];
-	sprintf((char *)health, "Health = %d", enemyHealth);
-	print(statusBarPos, (char *)health);
+	
+	char* score[20];
+	sprintf((char *)score, "Score = %d", myScore);
+	print(statusBarPos, (char *)score);
 
 	glFlush();
 }
@@ -455,6 +455,7 @@ void animateBullets()
 		{
 			if (enemyIsAlive && collide(bullet, enemy))
 			{
+				myScore++;
 				enemyHealth--;
 				destroyAtIndex(i--, bullets);
 				if(enemyHealth<=0)
