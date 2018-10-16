@@ -268,7 +268,7 @@ void init()
 	enemyDirection = 1;
 	enemy = shape(point(), 50, 50);
 	enemyIsAlive = true;
-	enemyHealth = 20;
+	enemyHealth = 100;
 
 	// Enemy Path variables
 	t = 1;
@@ -368,8 +368,8 @@ void EnemyFireTimer(int v)
 {
 	if (!enemyIsAlive)
 		return;
-	int chance = random(0, 100);
-	if (chance<100) // 50% enemy will shoot now
+	int chance = random(1, 100);
+	if (chance<80) // 80% enemy will shoot now
 		fireHazard(enemy.center);
 	
 	glutTimerFunc(1 * 1000, EnemyFireTimer, 0);
