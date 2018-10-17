@@ -27,7 +27,11 @@ void moveEnemy();
 void enemyFireTimer(int v);
 void obstacleFireTimer(int v);
 void obstacleTimer(int v);
+void powerUpTimer(int v);
 void moveObstacle();
+void reviveEnemy(int v);
+void animateDestroyerPowerUp();
+void animateFirePowerUp();
 
 // Structs
 
@@ -102,12 +106,22 @@ struct shape
 	float hazarWidth, hazardHeight;
 
 // PowerUps Variables
-	vector<shape> powerUps;
+	vector<shape> destroyerPowerUps;
+	vector<shape> fireRatePowerUps;
+	float powerUpWidth , powerUpSpeed;
 
 //-----------------
 
 
 // Drawing Functions
+void drawCircle(point p, float r) {
+	float x = p.x, y = p.y;
+	glPushMatrix();
+	glTranslatef(x, y, 0);
+	GLUquadric *quadObj = gluNewQuadric();
+	gluDisk(quadObj, 0, r, 50, 50);
+	glPopMatrix();
+}
 
 void drawRect(point topLeft , point bottomRight)
 {
@@ -164,6 +178,12 @@ void drawObstacle(shape s)
 void drawHazard(shape s)
 {
 	drawBullet(s);
+}
+
+// TODO Implement
+void drawPowerUp(shape s)
+{
+	drawCircle(s.center, s.width);
 }
 
   // Helper Functions
@@ -256,6 +276,7 @@ void main(int argc, char** argr)
 	glutTimerFunc(0, enemyFireTimer, 0); 
 	glutTimerFunc(0, obstacleTimer, 0); 
 	glutTimerFunc(0, obstacleFireTimer, 0); 
+	glutTimerFunc(0, powerUpTimer, 0);
 
 	glutPassiveMotionFunc(Mouse);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);	
@@ -277,7 +298,7 @@ void init()
 	// Player Variables
 	player = shape(point(200.0f, 20.0f), 50.0f, 30.0f);
 	playerSpeed = 20.0f ;
-	playerFireRate = 50;
+	playerFireRate = 1;
 	playerIsAlive = true;
 
 	// Bullet Variables
@@ -307,6 +328,10 @@ void init()
 	obstacleDirection = RIGHT_DIRECTION;
 	obstacleIsAlive = false;
 	obstacleFireRate = 1;
+
+	// PowerUp variables
+	powerUpWidth = 20;
+	powerUpSpeed = 10;
 }
 
 void Display(void)
@@ -331,6 +356,19 @@ void Display(void)
 		drawHazard(shape(hazard.center, hazard.width, hazard.height));
 		glPopMatrix();
 	}
+
+	for (unsigned i = 0; i < destroyerPowerUps.size(); i++)
+	{
+		shape powerUp = destroyerPowerUps[i];
+		drawPowerUp(powerUp);
+	}
+
+	for (unsigned i = 0; i < fireRatePowerUps.size(); i++)
+	{
+		shape powerUp = fireRatePowerUps[i];
+		drawPowerUp(powerUp);
+	}
+	
 
 	if(playerIsAlive)
 		drawPlayer(player); 
@@ -362,6 +400,8 @@ void anime()
 {
 	animateHazards();
 	animateBullets();
+	animateDestroyerPowerUp();
+	animateFirePowerUp();
 
 	if (enemyIsAlive)
 		moveEnemy();
@@ -404,6 +444,21 @@ void Mouse(int x, int y)
 }
 
 
+void powerUpTimer(int v)
+{
+	int chance = random(1, 100);
+	int pos = random(10, SCREEN_WIDTH-10);
+	if (chance < 50) // 80% powerUp will drop
+	{
+		destroyerPowerUps.push_back(shape(point(pos, SCREEN_HEIGHT), powerUpWidth, powerUpWidth));
+	}
+	else
+	{
+		fireRatePowerUps.push_back(shape(point(pos, SCREEN_HEIGHT), powerUpWidth, powerUpWidth));
+	}
+
+	glutTimerFunc(2 * 1000, powerUpTimer, 0);
+}
 
 
 void obstacleTimer(int v)
@@ -414,7 +469,7 @@ void obstacleTimer(int v)
 		obstacleDirection = RIGHT_DIRECTION;
 	}
 	obstacleIsAlive = true;
-	glutTimerFunc(2 * 1000, obstacleTimer, 0);
+	glutTimerFunc(10 * 1000, obstacleTimer, 0);
 }
 
 void obstacleFireTimer(int v)
@@ -430,12 +485,12 @@ void obstacleFireTimer(int v)
 
 void enemyFireTimer(int v)
 {
-	if (!enemyIsAlive)
-		return;
-	int chance = random(1, 100);
-	if (chance<80) // 80% enemy will shoot now
-		fireHazard(enemy.center);
-	
+	if (enemyIsAlive)
+	{
+		int chance = random(1, 100);
+		if (chance<80) // 80% enemy will shoot now
+			fireHazard(enemy.center);
+	}
 	glutTimerFunc(1000/enemyFireRate, enemyFireTimer, 0);
 }
 
@@ -474,8 +529,11 @@ void animateBullets()
 				myScore++;
 				enemyHealth--;
 				destroyAtIndex(i--, bullets);
-				if(enemyHealth<=0)
+				if (enemyHealth <= 0)
+				{
 					enemyIsAlive = false;
+					glutTimerFunc(5000, reviveEnemy, 0);
+				}
 			}
 			else if (obstacleIsAlive && collide(bullet, obstacle))
 			{
@@ -521,3 +579,54 @@ void moveObstacle()
 		obstacle.center.x += obstacleSpeed * obstacleDirection;
 	}
 }
+
+void animateDestroyerPowerUp()
+{
+	for (unsigned i = 0; i < destroyerPowerUps.size(); i++)
+	{
+		shape &powerUp = destroyerPowerUps[i];
+		if (powerUp.outOfBorders())
+			destroyAtIndex(i--, destroyerPowerUps);
+		else
+		{
+			if (playerIsAlive && collide(powerUp, player))
+			{
+				destroyAtIndex(i--, destroyerPowerUps);
+				myScore += enemyHealth / 2;
+				enemyHealth /= 2;
+			}
+			else
+				powerUp.center.y -= hazardSpeed;
+		}
+	}
+}
+
+void animateFirePowerUp()
+{
+	for (unsigned i = 0; i < fireRatePowerUps.size(); i++)
+	{
+		shape &powerUp = fireRatePowerUps[i];
+		if (powerUp.outOfBorders())
+			destroyAtIndex(i--, fireRatePowerUps);
+		else
+		{
+			if (playerIsAlive && collide(powerUp, player))
+			{
+				destroyAtIndex(i--, fireRatePowerUps);
+				playerFireRate *= 2;
+			}
+			else
+				powerUp.center.y -= hazardSpeed;
+		}
+	}
+}
+
+void reviveEnemy(int v)
+{
+	enemyFullHealth *= 2;
+	enemyHealth = enemyFullHealth;
+	enemyIsAlive = true;
+}
+
+
+
