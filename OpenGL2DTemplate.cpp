@@ -32,6 +32,8 @@ void moveObstacle();
 void reviveEnemy(int v);
 void animateDestroyerPowerUp();
 void animateFirePowerUp();
+float max(float a, float b);
+float min(float a, float b);
 
 // Structs
 
@@ -39,7 +41,7 @@ struct point
 {
 	float x, y;
 	point() {}
-	point(float a, float b){x = a; y = b;}
+	point(float a, float b) { x = a; y = b; }
 };
 
 struct shape
@@ -47,10 +49,10 @@ struct shape
 	point center;
 	float width, height;
 	shape() {}
-	shape(point center,float width, float height) 
+	shape(point center, float width, float height)
 	{
 		this->center = center;
-		this->width = width, this->height = height; 
+		this->width = width, this->height = height;
 	}
 
 	bool outOfBorders()
@@ -58,7 +60,7 @@ struct shape
 		float x = center.x, y = center.y;
 		return x > SCREEN_WIDTH || x < 0 || y > SCREEN_HEIGHT || y < 0;
 	}
-	
+
 };
 
 
@@ -68,47 +70,48 @@ struct shape
 //	Global Variables
 
 // Status Bar
-	point statusBarPos;
-	point healthBarPos;
-	int healthBarWidth;
+point statusBarPos;
+point healthBarPos;
+int healthBarWidth;
 
 // Player Variables
-	shape player;
-	float playerSpeed ; // TODO Remove
-	int playerFireRate;
-	bool playerIsAlive;
-	int myScore;
+shape player;
+point lastLocation;
+float playerSpeed; // TODO Remove
+int playerFireRate;
+bool playerIsAlive;
+int myScore;
 
 // Bullet Vairables
-	float bulletWidth, bulletHeight , bulletSpeed;
-	vector<shape> bullets;
+float bulletWidth, bulletHeight, bulletSpeed;
+vector<shape> bullets;
 
 
 // Enemy Variables
-	shape enemy;
-	float enemySpeed;
-	float t,enemyDirection;
-	point p0, p1, p2, p3;
-	bool enemyIsAlive;
-	int enemyHealth , enemyFullHealth;
-	int enemyFireRate; // Bullets per second
+shape enemy;
+float enemySpeed;
+float t, enemyDirection;
+point p0, p1, p2, p3;
+bool enemyIsAlive;
+int enemyHealth, enemyFullHealth;
+int enemyFireRate; // Bullets per second
 
 // Obstacles Variables
-	bool obstacleIsAlive;
-	shape obstacle;
-	float obstacleSpeed , obstacleWidth , obstacleHeight;
-	int obstacleDirection;
-	int obstacleFireRate;
+bool obstacleIsAlive;
+shape obstacle;
+float obstacleSpeed, obstacleWidth, obstacleHeight;
+int obstacleDirection;
+int obstacleFireRate;
 
 // Hazards Variables
-	vector<shape> hazards;
-	float hazardSpeed;
-	float hazarWidth, hazardHeight;
+vector<shape> hazards;
+float hazardSpeed;
+float hazarWidth, hazardHeight;
 
 // PowerUps Variables
-	vector<shape> destroyerPowerUps;
-	vector<shape> fireRatePowerUps;
-	float powerUpWidth , powerUpSpeed;
+vector<shape> destroyerPowerUps;
+vector<shape> fireRatePowerUps;
+float powerUpWidth, powerUpSpeed;
 
 //-----------------
 
@@ -123,53 +126,64 @@ void drawCircle(point p, float r) {
 	glPopMatrix();
 }
 
-void drawRect(point topLeft , point bottomRight)
+void drawRect(point topLeft, point bottomRight)
 {
-	glBegin(GL_QUADS); 
-	glVertex3f(topLeft.x,topLeft.y, 0.0f);
+	glBegin(GL_QUADS);
+	glVertex3f(topLeft.x, topLeft.y, 0.0f);
 	glVertex3f(bottomRight.x, topLeft.y, 0.0f);
-	glVertex3f(bottomRight.x,bottomRight.y, 0.0f);
-	glVertex3f(topLeft.x,bottomRight.y, 0.0f);
+	glVertex3f(bottomRight.x, bottomRight.y, 0.0f);
+	glVertex3f(topLeft.x, bottomRight.y, 0.0f);
 	glEnd();
 }
 
-void drawTriangle(point p1, point p2,point p3)
+void drawTriangle(point p1, point p2, point p3)
 {
+	float angle = 16;
+	float x = (max(p1.x, max(p2.x, p3.x)) - min(p1.x, min(p2.x, p3.x))) / 2;
+	float y = (max(p1.y, max(p2.y, p3.y)) - min(p1.y, min(p2.y, p3.y))) / 2;
+/*
+	glPushMatrix();
+	glTranslatef(x, y, 0);
+	glRotated(angle, 0, 0, 0);
+	glTranslatef(-x, -y, 0);
+*/
 	glBegin(GL_TRIANGLES);
 	glVertex3f(p1.x, p1.y, 0.0f);
 	glVertex3f(p2.x, p2.y, 0.0f);
-	glVertex3f(p3.x,p3.y, 0.0f);
+	glVertex3f(p3.x, p3.y, 0.0f);
 	glEnd();
+
+//	glPopMatrix();
 }
 
 void drawPlayer(shape s)
 {
-	float x = s.center.x, y = s.center.y , width = s.width , height = s.height;
-	float wingWidth = width / 10 , wingHeight = height/2;
-	drawRect(point(x-width/2,y+height/10) , point(x+width/2 , y));// body
-	drawRect(point(x-width/2,y+ wingHeight) , point(x -width/2 + wingWidth, y)); // left wing
-	drawRect(point(x + width / 2 - wingWidth, y + wingHeight) , point( x + width / 2, y)); // right wing
-	drawTriangle(point(x - width/5, y) , point(x, y + height), point(x + width/5, y)); // Head
+	float x = s.center.x, y = s.center.y, width = s.width, height = s.height;
+	float wingWidth = width / 10, wingHeight = height / 2;
+	drawRect(point(x - width / 2, y + height / 10), point(x + width / 2, y));// body
+	drawRect(point(x - width / 2, y + wingHeight), point(x - width / 2 + wingWidth, y)); // left wing
+	drawRect(point(x + width / 2 - wingWidth, y + wingHeight), point(x + width / 2, y)); // right wing
+	drawTriangle(point(x - width / 5, y), point(x, y + height), point(x + width / 5, y)); // Head
 }
 
 // TODO Implement
 void drawEnemy(shape s)
 {
 	float x = s.center.x, y = s.center.y, width = s.width, height = s.height;
-	drawRect(point(x - width / 2, y + height / 2), point(x+width/2 , y-height/2));
+	drawRect(point(x - width / 2, y + height / 2), point(x + width / 2, y - height / 2));
 }
 
 void drawBullet(shape s)
 {
 	float width = s.width, height = s.height;
-	float xCenter = s.center.x , yLower  = s.center.y ;
+	float xCenter = s.center.x, yLower = s.center.y;
 	float xLeft = xCenter - width / 2, xRight = xCenter + width / 2;
 	drawRect(point(xLeft, yLower + height), point(xRight, yLower)); // Body
-	drawTriangle(point(xLeft, yLower + height), point(xCenter, yLower + height + height / 2), point(xRight , yLower+height)); // Head
+	drawTriangle(point(xLeft, yLower + height), point(xCenter, yLower + height + height / 2), point(xRight, yLower + height)); // Head
 }
 
 // TODO Implement
-void drawObstacle(shape s) 
+void drawObstacle(shape s)
 {
 	drawEnemy(s);
 }
@@ -186,7 +200,7 @@ void drawPowerUp(shape s)
 	drawCircle(s.center, s.width);
 }
 
-  // Helper Functions
+// Helper Functions
 
 point bezier(float t, point p0, point p1, point p2, point p3)
 {
@@ -198,7 +212,7 @@ point bezier(float t, point p0, point p1, point p2, point p3)
 
 int random(int lower, int upper)
 {
-	return (rand() % (upper-lower+1)) + lower;
+	return (rand() % (upper - lower + 1)) + lower;
 }
 
 bool collide(shape a, shape b)
@@ -236,13 +250,24 @@ void print(point p, char *string)
 		glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24, string[i]);
 	}
 }
+
+float max(float a, float b)
+{
+	return a >= b ? a : b;
+}
+
+float min(float a, float b)
+{
+	return a <= b ? a : b;
+}
+
 //----------------- 
 
 // Dynamic Actions
 
 void fireBullet(point location)
 {
-	bullets.push_back(shape(location , bulletWidth , bulletHeight));
+	bullets.push_back(shape(location, bulletWidth, bulletHeight));
 }
 
 void fireHazard(point location)
@@ -250,11 +275,11 @@ void fireHazard(point location)
 	hazards.push_back(shape(location, hazarWidth, hazardHeight));
 }
 
-void destroyAtIndex(int index,vector<shape> &shapes)
+void destroyAtIndex(int index, vector<shape> &shapes)
 {
 	// Swap this element with the last one to pop from the vector
-	shape tmp = shapes[shapes.size()-1];
-	shapes[shapes.size()-1] = shapes[index];
+	shape tmp = shapes[shapes.size() - 1];
+	shapes[shapes.size() - 1] = shapes[index];
 	shapes[index] = tmp;
 	shapes.pop_back();
 }
@@ -266,20 +291,20 @@ void main(int argc, char** argr)
 {
 	init();
 	glutInit(&argc, argr);
-	glutInitWindowSize(SCREEN_WIDTH,SCREEN_HEIGHT);
+	glutInitWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
 	glutInitWindowPosition(50, 50);
 	glutCreateWindow("Space Shooter");
 	glutDisplayFunc(Display);
 	glutIdleFunc(anime);
-	glutKeyboardFunc(Key);      
+	glutKeyboardFunc(Key);
 
-	glutTimerFunc(0, enemyFireTimer, 0); 
-	glutTimerFunc(0, obstacleTimer, 0); 
-	glutTimerFunc(0, obstacleFireTimer, 0); 
+	glutTimerFunc(0, enemyFireTimer, 0);
+	glutTimerFunc(0, obstacleTimer, 0);
+	glutTimerFunc(0, obstacleFireTimer, 0);
 	glutTimerFunc(0, powerUpTimer, 0);
 
 	glutPassiveMotionFunc(Mouse);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);	
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	gluOrtho2D(0.0, SCREEN_WIDTH, 0.0, SCREEN_HEIGHT);
 	glutMainLoop();
@@ -297,12 +322,13 @@ void init()
 
 	// Player Variables
 	player = shape(point(200.0f, 20.0f), 50.0f, 30.0f);
-	playerSpeed = 20.0f ;
+	playerSpeed = 20.0f;
 	playerFireRate = 1;
 	playerIsAlive = true;
+	lastLocation = point(0, 0);
 
 	// Bullet Variables
-	bulletWidth = 10.0f, bulletHeight = 10.0f , bulletSpeed = 18.0f;
+	bulletWidth = 10.0f, bulletHeight = 10.0f, bulletSpeed = 18.0f;
 
 	// Enemy Variables
 	enemySpeed = 0.004;
@@ -314,8 +340,8 @@ void init()
 
 	// Enemy Path variables
 	t = 1;
-	p0 = point(enemy.width, SCREEN_HEIGHT/1.2);
-	p3 = point(SCREEN_WIDTH - enemy.height,SCREEN_HEIGHT/1.2);
+	p0 = point(enemy.width, SCREEN_HEIGHT / 1.2);
+	p3 = point(SCREEN_WIDTH - enemy.height, SCREEN_HEIGHT / 1.2);
 
 	// Hazards Variables
 	hazardSpeed = 10.0f;
@@ -351,8 +377,8 @@ void Display(void)
 		shape hazard = hazards[i];
 		glPushMatrix();
 		glTranslatef(hazard.center.x, hazard.center.y, 0);
-		glRotated(180,1,0, 0);
-		glTranslatef(-hazard.center.x , -hazard.center.y,0);
+		glRotated(180,0,0,1);
+		glTranslatef(-hazard.center.x, -hazard.center.y, 0);
 		drawHazard(shape(hazard.center, hazard.width, hazard.height));
 		glPopMatrix();
 	}
@@ -368,11 +394,27 @@ void Display(void)
 		shape powerUp = fireRatePowerUps[i];
 		drawPowerUp(powerUp);
 	}
-	
 
-	if(playerIsAlive)
-		drawPlayer(player); 
-	if(enemyIsAlive)
+
+	if (playerIsAlive)
+	{
+		glPushMatrix();
+		glTranslatef(player.center.x, player.center.y, 0);
+		if (player.center.x > lastLocation.x)
+		{
+			glRotated(-20,0,0,1);
+		}
+		else if(player.center.x < lastLocation.x)
+			glRotated(20,0,0,1);
+		glTranslatef(-player.center.x, -player.center.y, 0);
+		drawPlayer(player);
+		glPopMatrix();
+		lastLocation = player.center;
+		
+	}
+
+
+	if (enemyIsAlive)
 		drawEnemy(enemy);
 	if (obstacleIsAlive)
 		drawObstacle(obstacle);
@@ -383,14 +425,14 @@ void Display(void)
 	print(statusBarPos, (char *)score);
 
 
-	
+
 	glColor3f(0.4, 0, 0);
 	int xHealthRightPos = healthBarPos.x + healthBarWidth / 2;
 	int xHealthLeftPos = healthBarPos.x - healthBarWidth / 2;
 
-	drawRect(point(xHealthLeftPos, SCREEN_HEIGHT), point(xHealthRightPos,SCREEN_HEIGHT-20));
+	drawRect(point(xHealthLeftPos, SCREEN_HEIGHT), point(xHealthRightPos, SCREEN_HEIGHT - 20));
 	glColor3f(1, 0, 0);
-	drawRect(point(xHealthLeftPos, SCREEN_HEIGHT), point(xHealthLeftPos +  (enemyHealth * (xHealthRightPos-xHealthLeftPos) / enemyFullHealth), SCREEN_HEIGHT - 20));
+	drawRect(point(xHealthLeftPos, SCREEN_HEIGHT), point(xHealthLeftPos + (enemyHealth * (xHealthRightPos - xHealthLeftPos) / enemyFullHealth), SCREEN_HEIGHT - 20));
 	glColor3f(1, 1, 1);
 
 	glFlush();
@@ -405,10 +447,10 @@ void anime()
 
 	if (enemyIsAlive)
 		moveEnemy();
-	
+
 	if (obstacleIsAlive)
 		moveObstacle();
-	
+
 
 	for (int i = 0; i < 1e7; i++);
 	glutPostRedisplay();
@@ -416,7 +458,7 @@ void anime()
 
 void Key(unsigned char key, int x, int y)
 {
-	
+
 	switch (key)
 	{
 	case ' ': // Fire
@@ -435,10 +477,12 @@ void Key(unsigned char key, int x, int y)
 }
 
 
-void Mouse(int x, int y) 
+void Mouse(int x, int y)
 {
-	if(playerIsAlive)
-	player.center.x = x;
+	if (playerIsAlive)
+	{
+		player.center.x = x;
+	}
 
 	glutPostRedisplay();
 }
@@ -447,7 +491,7 @@ void Mouse(int x, int y)
 void powerUpTimer(int v)
 {
 	int chance = random(1, 100);
-	int pos = random(10, SCREEN_WIDTH-10);
+	int pos = random(10, SCREEN_WIDTH - 10);
 	if (chance < 50) // 80% powerUp will drop
 	{
 		destroyerPowerUps.push_back(shape(point(pos, SCREEN_HEIGHT), powerUpWidth, powerUpWidth));
@@ -465,7 +509,7 @@ void obstacleTimer(int v)
 {
 	if (!obstacleIsAlive)
 	{
-		obstacle = shape(point(obstacleWidth+1, SCREEN_HEIGHT/1.5), obstacleWidth, obstacleHeight);
+		obstacle = shape(point(obstacleWidth + 1, SCREEN_HEIGHT / 1.5), obstacleWidth, obstacleHeight);
 		obstacleDirection = RIGHT_DIRECTION;
 	}
 	obstacleIsAlive = true;
@@ -480,7 +524,7 @@ void obstacleFireTimer(int v)
 		if (chance < 80) // 80% enemy will shoot now
 			fireHazard(obstacle.center);
 	}
-	glutTimerFunc(1000/obstacleFireRate, obstacleFireTimer, 0);
+	glutTimerFunc(1000 / obstacleFireRate, obstacleFireTimer, 0);
 }
 
 void enemyFireTimer(int v)
@@ -488,10 +532,10 @@ void enemyFireTimer(int v)
 	if (enemyIsAlive)
 	{
 		int chance = random(1, 100);
-		if (chance<80) // 80% enemy will shoot now
+		if (chance < 80) // 80% enemy will shoot now
 			fireHazard(enemy.center);
 	}
-	glutTimerFunc(1000/enemyFireRate, enemyFireTimer, 0);
+	glutTimerFunc(1000 / enemyFireRate, enemyFireTimer, 0);
 }
 
 
@@ -593,7 +637,8 @@ void animateDestroyerPowerUp()
 			{
 				destroyAtIndex(i--, destroyerPowerUps);
 				myScore += enemyHealth / 2;
-				enemyHealth /= 2;
+				enemyHealth -= enemyHealth / 2;
+
 			}
 			else
 				powerUp.center.y -= hazardSpeed;
