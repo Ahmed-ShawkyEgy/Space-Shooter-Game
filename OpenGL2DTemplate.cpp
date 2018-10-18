@@ -10,7 +10,7 @@ using namespace std;
 
 // Constants
 
-const int SCREEN_WIDTH = 1500;
+const int SCREEN_WIDTH = 1800;
 const int SCREEN_HEIGHT = 900;
 const int RIGHT_DIRECTION = 1, LEFT_DIRECTION = -1;
 
@@ -151,10 +151,13 @@ void drawPlayer(shape s)
 {
 	float x = s.center.x, y = s.center.y, width = s.width, height = s.height;
 	float wingWidth = width / 10, wingHeight = height / 2;
+
+	glColor3f(0, 1, 0);
 	drawRect(point(x - width / 2, y + height / 10), point(x + width / 2, y));// body
 	drawRect(point(x - width / 2, y + wingHeight), point(x - width / 2 + wingWidth, y)); // left wing
 	drawRect(point(x + width / 2 - wingWidth, y + wingHeight), point(x + width / 2, y)); // right wing
 	drawTriangle(point(x - width / 5, y), point(x, y + height), point(x + width / 5, y)); // Head
+	glColor3f(1, 1, 1);
 }
 
 
@@ -216,10 +219,30 @@ void drawHazard(shape s)
 	drawBullet(s);
 }
 
-// TODO Implement
-void drawPowerUp(shape s)
+
+void drawDestroyPowerUp(shape s)
 {
+	float x = s.center.x, y = s.center.y, width = s.width, height = s.height;
+	float w = width / 3, h = height / 2;
+
+	glColor3f(1,0,0);
+	glBegin(GL_POLYGON);
+	glVertex3f(x, y+h, 0.0f);
+	glVertex3f(x+w, y + h/2, 0.0f);
+	glVertex3f(x+w, y - h/2, 0.0f);
+	glVertex3f(x, y - h, 0.0f);
+	glVertex3f(x - w, y - h / 2, 0.0f);
+	glVertex3f(x - w, y + h / 2, 0.0f);
+
+	glEnd();
+	glColor3f(1, 1, 1);
+}
+
+void drawFireRatePowerUp(shape s)
+{
+	glColor3f(0, 1, 0.5);
 	drawCircle(s.center, s.width);
+	glColor3f(1, 1, 1);
 }
 
 // Helper Functions
@@ -403,13 +426,13 @@ void Display(void)
 	for (unsigned i = 0; i < destroyerPowerUps.size(); i++)
 	{
 		shape powerUp = destroyerPowerUps[i];
-		drawPowerUp(powerUp);
+		drawDestroyPowerUp(powerUp);
 	}
 	// Render fireRate PowerUps
 	for (unsigned i = 0; i < fireRatePowerUps.size(); i++)
 	{
 		shape powerUp = fireRatePowerUps[i];
-		drawPowerUp(powerUp);
+		drawFireRatePowerUp(powerUp);
 	}
 
 
@@ -525,9 +548,9 @@ void powerUpTimer(int v)
 {
 	int chance = random(1, 100);
 	int pos = random(10, SCREEN_WIDTH - 10);
-	if (chance < 50) // 80% powerUp will drop
+	if (chance < 50) 
 	{
-		destroyerPowerUps.push_back(shape(point(pos, SCREEN_HEIGHT), powerUpWidth, powerUpWidth));
+		destroyerPowerUps.push_back(shape(point(pos, SCREEN_HEIGHT), powerUpWidth*2, powerUpWidth*2));
 	}
 	else
 	{
