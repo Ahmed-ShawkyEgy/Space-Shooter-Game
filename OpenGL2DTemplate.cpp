@@ -89,6 +89,7 @@ vector<shape> bullets;
 
 // Enemy Variables
 shape enemy;
+point enemyLastPoint;
 float enemySpeed;
 float t, enemyDirection;
 point p0, p1, p2, p3;
@@ -138,22 +139,11 @@ void drawRect(point topLeft, point bottomRight)
 
 void drawTriangle(point p1, point p2, point p3)
 {
-	float angle = 16;
-	float x = (max(p1.x, max(p2.x, p3.x)) - min(p1.x, min(p2.x, p3.x))) / 2;
-	float y = (max(p1.y, max(p2.y, p3.y)) - min(p1.y, min(p2.y, p3.y))) / 2;
-/*
-	glPushMatrix();
-	glTranslatef(x, y, 0);
-	glRotated(angle, 0, 0, 0);
-	glTranslatef(-x, -y, 0);
-*/
 	glBegin(GL_TRIANGLES);
 	glVertex3f(p1.x, p1.y, 0.0f);
 	glVertex3f(p2.x, p2.y, 0.0f);
 	glVertex3f(p3.x, p3.y, 0.0f);
 	glEnd();
-
-//	glPopMatrix();
 }
 
 void drawPlayer(shape s)
@@ -217,20 +207,11 @@ int random(int lower, int upper)
 
 bool collide(shape a, shape b)
 {
-	/*float ax1 = a.center.x - a.width / 2;
-	float ax2 = a.center.x + a.width / 2;
-	float ay1 = a.center.y + a.height / 2;
-	float ay2 = a.center.y - a.height / 2;
-
-	float bx1 = b.center.x - b.width / 2;
-	float bx2 = b.center.x + b.width / 2;
-	float by1 = b.center.y + b.height / 2;
-	float by2 = b.center.y - b.height / 2;
-*/
-	return a.center.x < b.center.x + b.width &&
-		a.center.x + a.width > b.center.x &&
-		a.center.y < b.center.y + b.height &&
-		a.height + a.center.y > b.center.y;
+	float eps =10;
+	return a.center.x < b.center.x + b.width + eps &&
+		a.center.x + a.width + eps > b.center.x &&
+		a.center.y < b.center.y + b.height + eps &&
+		a.height + a.center.y + eps > b.center.y;
 }
 
 void print(point p, char *string)
@@ -336,7 +317,8 @@ void init()
 	enemy = shape(point(), 50, 50);
 	enemyIsAlive = true;
 	enemyHealth = enemyFullHealth = 10;
-	enemyFireRate = 2;
+	enemyFireRate = 1;
+	enemyLastPoint = point(0, 0);
 
 	// Enemy Path variables
 	t = 1;
@@ -362,6 +344,8 @@ void init()
 
 void Display(void)
 {
+	
+
 	//glClearColor(0.0f, 0.0f,0.0f, 0.0f); // update the background color
 	glClear(GL_COLOR_BUFFER_BIT);
 	// Render bullets
@@ -383,12 +367,13 @@ void Display(void)
 		glPopMatrix();
 	}
 
+	// Render Destroyer PowerUps
 	for (unsigned i = 0; i < destroyerPowerUps.size(); i++)
 	{
 		shape powerUp = destroyerPowerUps[i];
 		drawPowerUp(powerUp);
 	}
-
+	// Render fireRate PowerUps
 	for (unsigned i = 0; i < fireRatePowerUps.size(); i++)
 	{
 		shape powerUp = fireRatePowerUps[i];
@@ -415,7 +400,17 @@ void Display(void)
 
 
 	if (enemyIsAlive)
+	{
+		glPushMatrix();
+		float angle = atan((enemy.center.y-enemyLastPoint.y) / (enemy.center.x - enemyLastPoint.x) );
+		angle *= 10;
+		glTranslatef(enemy.center.x, enemy.center.y, 0);
+		glRotated(angle, 0, 0, 1);
+		glTranslatef(-enemy.center.x, -enemy.center.y, 0);
 		drawEnemy(enemy);
+		glPopMatrix();
+		enemyLastPoint = enemy.center;
+	}
 	if (obstacleIsAlive)
 		drawObstacle(obstacle);
 
@@ -434,6 +429,12 @@ void Display(void)
 	glColor3f(1, 0, 0);
 	drawRect(point(xHealthLeftPos, SCREEN_HEIGHT), point(xHealthLeftPos + (enemyHealth * (xHealthRightPos - xHealthLeftPos) / enemyFullHealth), SCREEN_HEIGHT - 20));
 	glColor3f(1, 1, 1);
+
+	glPointSize(3);
+	glBegin(GL_POINTS);
+	for(int i = 0;i<50;i++)
+		glVertex3f(random(0,SCREEN_WIDTH),random(0,SCREEN_HEIGHT), 0.0f);
+	glEnd();
 
 	glFlush();
 }
