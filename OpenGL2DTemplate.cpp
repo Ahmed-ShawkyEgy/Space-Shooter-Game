@@ -557,7 +557,7 @@ void powerUpTimer(int v)
 		fireRatePowerUps.push_back(shape(point(pos, SCREEN_HEIGHT), powerUpWidth, powerUpWidth));
 	}
 
-	glutTimerFunc(2 * 1000, powerUpTimer, 0);
+	glutTimerFunc(5 * 1000, powerUpTimer, 0);
 }
 
 
@@ -632,7 +632,7 @@ void animateBullets()
 				if (enemyHealth <= 0)
 				{
 					enemyIsAlive = false;
-					glutTimerFunc(5000, reviveEnemy, 0);
+					glutTimerFunc(3000, reviveEnemy, 0);
 				}
 			}
 			else if (obstacleIsAlive && collide(bullet, obstacle))
@@ -714,7 +714,7 @@ void animateFirePowerUp()
 			if (playerIsAlive && collide(powerUp, player))
 			{
 				destroyAtIndex(i--, fireRatePowerUps);
-				playerFireRate *= 2;
+				playerFireRate ++;
 			}
 			else
 				powerUp.center.y -= hazardSpeed;
