@@ -10,7 +10,7 @@ using namespace std;
 
 // Constants
 
-const int SCREEN_WIDTH = 1000;
+const int SCREEN_WIDTH = 1500;
 const int SCREEN_HEIGHT = 900;
 const int RIGHT_DIRECTION = 1, LEFT_DIRECTION = -1;
 
@@ -118,6 +118,7 @@ float powerUpWidth, powerUpSpeed;
 
 
 // Drawing Functions
+
 void drawCircle(point p, float r) {
 	float x = p.x, y = p.y;
 	glPushMatrix();
@@ -156,11 +157,26 @@ void drawPlayer(shape s)
 	drawTriangle(point(x - width / 5, y), point(x, y + height), point(x + width / 5, y)); // Head
 }
 
-// TODO Implement
+
 void drawEnemy(shape s)
 {
 	float x = s.center.x, y = s.center.y, width = s.width, height = s.height;
-	drawRect(point(x - width / 2, y + height / 2), point(x + width / 2, y - height / 2));
+	float halfWidth = width / 2, halfHeight = height / 2;
+
+	drawRect(point(x - halfWidth, y), point(x + halfWidth, y - 2*(halfHeight/3)));
+
+	glColor3f(1, 0, 0);
+	drawCircle(point(x - halfWidth / 2, y-halfHeight/3), halfWidth / 4);
+	drawCircle(point(x + halfWidth / 2, y - halfHeight / 3), halfWidth / 4);
+
+	glColor3f(1, 1, 0);
+	drawRect(point(x - 2 * halfWidth / 3, y - 2 * halfHeight / 3), point(x + 2 * halfWidth / 3, y - halfHeight));
+	glColor3f(1,1,1);
+
+	glColor3f(1, 0,1);
+	drawTriangle(point(x-halfWidth/2,y), point(x,y+halfHeight), point(x+halfWidth/2,y));
+
+	glColor3f(1, 1, 1);
 }
 
 void drawBullet(shape s)
@@ -314,7 +330,7 @@ void init()
 	// Enemy Variables
 	enemySpeed = 0.004;
 	enemyDirection = 1;
-	enemy = shape(point(), 50, 50);
+	enemy = shape(point(), 70, 70);
 	enemyIsAlive = true;
 	enemyHealth = enemyFullHealth = 10;
 	enemyFireRate = 1;
@@ -346,8 +362,8 @@ void Display(void)
 {
 	
 
-	//glClearColor(0.0f, 0.0f,0.0f, 0.0f); // update the background color
 	glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(0.0f, 0.0f,0.15f, 0.0f); // update the background color
 	// Render bullets
 	for (unsigned i = 0; i < bullets.size(); i++)
 	{
