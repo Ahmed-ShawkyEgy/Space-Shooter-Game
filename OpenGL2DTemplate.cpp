@@ -169,7 +169,7 @@ void drawEnemy(shape s)
 	drawCircle(point(x - halfWidth / 2, y-halfHeight/3), halfWidth / 4);
 	drawCircle(point(x + halfWidth / 2, y - halfHeight / 3), halfWidth / 4);
 
-	glColor3f(1, 1, 0);
+	glColor3f(0.6, 0.8, 0.5);
 	drawRect(point(x - 2 * halfWidth / 3, y - 2 * halfHeight / 3), point(x + 2 * halfWidth / 3, y - halfHeight));
 	glColor3f(1,1,1);
 
@@ -181,20 +181,36 @@ void drawEnemy(shape s)
 
 void drawBullet(shape s)
 {
+	glColor3f(0.9,0.9,0);
 	float width = s.width, height = s.height;
 	float xCenter = s.center.x, yLower = s.center.y;
 	float xLeft = xCenter - width / 2, xRight = xCenter + width / 2;
 	drawRect(point(xLeft, yLower + height), point(xRight, yLower)); // Body
 	drawTriangle(point(xLeft, yLower + height), point(xCenter, yLower + height + height / 2), point(xRight, yLower + height)); // Head
+	glColor3f(1,1,1);
 }
 
-// TODO Implement
+
 void drawObstacle(shape s)
 {
-	drawEnemy(s);
+	float x = s.center.x, y = s.center.y, width = s.width, height = s.height;
+	float w = width / 3, h = height / 2;
+
+	drawRect(point(x-w/2 , y+h), point(x+w/2,y-h));
+
+
+	glColor3f(1, 0, 1);
+	drawCircle(point(x - w / 4, y), w / 6);
+	drawCircle(point(x + w / 4, y), w / 6);
+
+	glColor3f(0.5, 0, 0);
+	drawTriangle(point(x-w-w/2,y), point(x-w/2,y+h), point(x-w/2,y-h));
+	drawTriangle(point(x + w + w / 2, y), point(x + w / 2, y + h), point(x + w / 2, y - h));
+
+	glColor3f(1, 1, 1);
 }
 
-// TODO Implement
+
 void drawHazard(shape s)
 {
 	drawBullet(s);
@@ -330,7 +346,7 @@ void init()
 	// Enemy Variables
 	enemySpeed = 0.004;
 	enemyDirection = 1;
-	enemy = shape(point(), 70, 70);
+	enemy = shape(point(), 80, 80);
 	enemyIsAlive = true;
 	enemyHealth = enemyFullHealth = 10;
 	enemyFireRate = 1;
@@ -347,7 +363,7 @@ void init()
 
 	// Obstacle Variables
 	obstacleHeight = 50;
-	obstacleWidth = 50;
+	obstacleWidth = 100;
 	obstacleSpeed = 10;
 	obstacleDirection = RIGHT_DIRECTION;
 	obstacleIsAlive = false;
